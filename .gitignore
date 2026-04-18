@@ -1,0 +1,16 @@
+# Environment
+.env
+.venv/
+__pycache__/
+*.pyc
+
+# ML model
+model.pkl
+
+# Node
+node_modules/
+dist/
+
+# IDE
+.vscode/
+.idea/
