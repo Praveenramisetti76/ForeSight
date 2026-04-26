@@ -13,7 +13,7 @@ async def register(user: UserRegister):
         raise HTTPException(status_code=400, detail="Email already registered")
     if user.role not in ("manager", "admin"):
         raise HTTPException(status_code=400, detail="Role must be 'manager' or 'admin'")
-    hashed = bcrypt.hashpw(user.password, bcrypt.gensalt())
+    hashed = bcrypt.hashpw(user.password.encode('utf-8'), bcrypt.gensalt())
     result = await users_collection.insert_one(
         {
             "name": user.name,
@@ -27,7 +27,7 @@ async def register(user: UserRegister):
 @router.post("/login", response_model=TokenResponse)
 async def login(user: UserLogin):
     db_user = await users_collection.find_one({"email": user.email})
-    if not db_user or not bcrypt.checkpw(user.password, db_user["password"]):
+    if not db_user or not bcrypt.checkpw(user.password.encode('utf-8'), db_user["password"]):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     token = create_access_token(
         {
