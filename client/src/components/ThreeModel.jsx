@@ -3,31 +3,37 @@ import * as THREE from 'three';
 
 const ThreeModel = () => {
   const mountRef = useRef(null);
+  const mouse = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
-    let scene, camera, renderer, model;
-    let mouseX = 0, mouseY = 0;
+    let scene, camera, renderer, model, frameId;
 
     // Initialize Three.js
     scene = new THREE.Scene();
-    camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.set(0, 0, 5);
+
+    const aspect = window.innerWidth / window.innerHeight;
+    camera = new THREE.PerspectiveCamera(45, aspect, 0.1, 1000);
+    camera.position.z = 5;
 
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    if (mountRef.current) mountRef.current.appendChild(renderer.domElement);
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+    if (mountRef.current) {
+      mountRef.current.appendChild(renderer.domElement);
+    }
+
+    // Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
     scene.add(ambientLight);
 
-    const pointLight = new THREE.PointLight(0x3b82f6, 1.5);
-    pointLight.position.set(5, 5, 5);
-    scene.add(pointLight);
+    const mainLight = new THREE.PointLight(0x3b82f6, 20);
+    mainLight.position.set(5, 5, 5);
+    scene.add(mainLight);
 
-    const subtleLight = new THREE.PointLight(0x1e293b, 3);
-    subtleLight.position.set(-5, -5, 5);
-    scene.add(subtleLight);
+    const blueLight = new THREE.PointLight(0x60a5fa, 15);
+    blueLight.position.set(-5, -5, 2);
+    scene.add(blueLight);
 
     // Procedural wireframe geometry
     const geometry = new THREE.IcosahedronGeometry(2.5, 1);
@@ -37,45 +43,64 @@ const ThreeModel = () => {
       transparent: true,
       opacity: 0.15,
     });
+
     model = new THREE.Mesh(geometry, material);
     scene.add(model);
 
     const animate = () => {
-      requestAnimationFrame(animate);
+      frameId = requestAnimationFrame(animate);
+
       if (model) {
-        model.rotation.x += (mouseY * 0.5 - model.rotation.x) * 0.05;
-        model.rotation.y += (mouseX * 0.5 - model.rotation.y) * 0.05;
+        model.rotation.x += (mouse.current.y * 0.5 - model.rotation.x) * 0.05;
+        model.rotation.y += (mouse.current.x * 0.5 - model.rotation.y) * 0.05;
       }
+
       renderer.render(scene, camera);
     };
+
     animate();
 
     const onMouseMove = (e) => {
-      mouseX = (e.clientX / window.innerWidth) - 0.5;
-      mouseY = (e.clientY / window.innerHeight) - 0.5;
+      mouse.current.x = (e.clientX / window.innerWidth) - 0.5;
+      mouse.current.y = (e.clientY / window.innerHeight) - 0.5;
     };
 
     const onResize = () => {
-      if (camera && renderer) {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-      }
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+      renderer.setSize(width, height);
     };
 
     window.addEventListener('mousemove', onMouseMove);
     window.addEventListener('resize', onResize);
 
     return () => {
+      cancelAnimationFrame(frameId);
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('resize', onResize);
-      if (mountRef.current && renderer) {
+
+      if (mountRef.current && renderer.domElement) {
         mountRef.current.removeChild(renderer.domElement);
       }
+
+      // Clean up Three.js resources
+      geometry.dispose();
+      material.dispose();
+      renderer.dispose();
     };
   }, []);
 
-  return <div ref={mountRef} className="absolute inset-0 z-0 pointer-events-none opacity-60" />;
+  return (
+    <div
+      ref={mountRef}
+      className="absolute inset-0 z-0 pointer-events-none"
+      style={{ opacity: 0.6 }}
+    />
+  );
 };
 
 export default ThreeModel;
+
