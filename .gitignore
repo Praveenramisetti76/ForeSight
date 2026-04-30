@@ -4,8 +4,9 @@
 __pycache__/
 *.pyc
 
-# ML model
-model.pkl
+# ML models
+saved_models/
+*.pkl
 
 # Node
 node_modules/
