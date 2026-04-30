@@ -11,7 +11,6 @@ from app.routes import admin as admin_routes
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Startup: seed admin + train models. Shutdown: nothing special."""
     try:
         await seed_admin()
     except Exception as e:

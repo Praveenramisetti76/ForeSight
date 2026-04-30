@@ -4,7 +4,6 @@ from app.ml.predictor import predict
 
 
 async def run_prediction(user_id: str, data: dict) -> dict:
-    """Run ML prediction and save result to DB."""
     result = predict(
         project_type=data["project_type"],
         team_size=data["team_size"],
@@ -49,7 +48,6 @@ async def run_prediction(user_id: str, data: dict) -> dict:
 
 
 async def get_user_history(user_id: str) -> list:
-    """Fetch all predictions for a user, sorted by most recent."""
     cursor = predictions_collection.find({"user_id": user_id}).sort("timestamp", -1)
     results = []
     async for doc in cursor:

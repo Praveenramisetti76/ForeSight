@@ -5,7 +5,6 @@ from app.dependencies import create_access_token
 
 
 async def register_user(name: str, email: str, password: str, role: str = "manager") -> dict:
-    """Create a new user account."""
     existing = await users_collection.find_one({"email": email})
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -27,7 +26,6 @@ async def register_user(name: str, email: str, password: str, role: str = "manag
 
 
 async def login_user(email: str, password: str) -> dict:
-    """Authenticate user and return a token response."""
     db_user = await users_collection.find_one({"email": email})
 
     if not db_user or not bcrypt.checkpw(password.encode("utf-8"), db_user["password"]):
@@ -44,7 +42,6 @@ async def login_user(email: str, password: str) -> dict:
 
 
 async def update_user_settings(user_id: str, name: str | None, password: str | None) -> dict:
-    """Update a user's display name and/or password."""
     from bson import ObjectId
 
     update_fields: dict = {}
@@ -61,7 +58,6 @@ async def update_user_settings(user_id: str, name: str | None, password: str | N
 
 
 async def delete_user_account(user_id: str) -> dict:
-    """Delete a user account permanently."""
     from bson import ObjectId
     from app.database import predictions_collection
 

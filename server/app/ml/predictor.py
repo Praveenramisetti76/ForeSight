@@ -1,10 +1,3 @@
-"""
-predictor.py
-------------
-Loads the best saved model and runs inference on new project data.
-Handles encoding of categorical inputs using the stored encoders.
-"""
-
 import pandas as pd
 import joblib
 from app.config import BEST_MODEL_PATH
@@ -19,10 +12,6 @@ def predict(
     methodology: str,
     team_experience: str,
 ) -> dict:
-    """
-    Run inference on a single project.
-    Returns {"risk_level": str, "risk_score": float}.
-    """
     payload = joblib.load(BEST_MODEL_PATH)
     pipeline = payload["pipeline"]
     label_enc = payload["label_encoder"]
@@ -31,7 +20,6 @@ def predict(
 
     # Encode categorical values using stored LabelEncoders
     def _safe_encode(encoder, value: str) -> int:
-        """Encode a value; if unseen, return 0 as fallback."""
         try:
             return int(encoder.transform([value])[0])
         except ValueError:

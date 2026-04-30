@@ -1,15 +1,3 @@
-"""
-trainer.py
-----------
-Trains multiple ML classifiers on the risk dataset,
-picks the best by test accuracy, and saves it.
-
-Models: Logistic Regression, Decision Tree, Random Forest,
-        Gradient Boosting, XGBoost, SVM, KNN, Naive Bayes.
-
-Adapted from Dataset/train_models.py for use as a FastAPI service.
-"""
-
 import os
 import warnings
 import time
@@ -33,7 +21,6 @@ from app.config import DATASET_PATH, BEST_MODEL_PATH, MODEL_DIR
 
 warnings.filterwarnings("ignore")
 
-# Optional XGBoost
 try:
     from xgboost import XGBClassifier
     XGBOOST_AVAILABLE = True
@@ -43,19 +30,9 @@ except ImportError:
 
 RANDOM_STATE = 42
 
-# Module-level cache for training results (served to admin panel)
 _training_results: dict = {}
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# 1. LOAD & PREPROCESS
-# ─────────────────────────────────────────────────────────────────────────────
-
 def load_and_preprocess(path: str):
-    """
-    Returns X, y, feature_cols, target LabelEncoder,
-    and the dict of categorical encoders.
-    """
     df = pd.read_csv(path)
     print(f"Loaded {len(df)} rows from '{path}'")
     print(f"Class distribution:\n{df['Risk Level'].value_counts()}\n")
@@ -78,10 +55,6 @@ def load_and_preprocess(path: str):
 
     return X, y, feature_cols, target_le, encoders
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# 2. MODEL REGISTRY
-# ─────────────────────────────────────────────────────────────────────────────
 
 def build_model_registry() -> dict:
     models = {
@@ -130,10 +103,6 @@ def build_model_registry() -> dict:
     return models
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# 3. TRAIN & EVALUATE
-# ─────────────────────────────────────────────────────────────────────────────
-
 def _train_and_evaluate(models: dict, X_train, X_test, y_train, y_test,
                         label_names: list) -> list:
     results = []
@@ -170,20 +139,11 @@ def _train_and_evaluate(models: dict, X_train, X_test, y_train, y_test,
     return results
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# 4. PUBLIC API
-# ─────────────────────────────────────────────────────────────────────────────
-
 def train_all_models(force: bool = False):
-    """
-    Train all models, pick best, save to disk.
-    Called at startup and when admin uploads new data.
-    """
     global _training_results
 
     if BEST_MODEL_PATH.exists() and not force:
         print(f"[OK] Model already exists at {BEST_MODEL_PATH}, skipping training.")
-        # Load cached results if available
         try:
             payload = joblib.load(BEST_MODEL_PATH)
             _training_results = payload.get("metrics", {})
@@ -203,19 +163,16 @@ def train_all_models(force: bool = False):
     models = build_model_registry()
     results = _train_and_evaluate(models, X_train, X_test, y_train, y_test, label_names)
 
-    # Pick best by test accuracy
     best = max(results, key=lambda r: r["test_acc"])
 
     print(f"\n[BEST] Best Model: {best['name']}")
     print(f"    Test Accuracy : {best['test_acc']:.4f}")
     print(f"    CV Mean±Std   : {best['cv_mean']:.4f} ± {best['cv_std']:.4f}")
 
-    # Classification report for admin panel
     y_pred = best["pipeline"].predict(X_test)
     report = classification_report(y_test, y_pred, target_names=label_names, output_dict=True)
     cm = confusion_matrix(y_test, y_pred).tolist()
 
-    # Build a comparison table for all models
     comparison = []
     for r in results:
         comparison.append({
@@ -240,7 +197,6 @@ def train_all_models(force: bool = False):
 
     _training_results = metrics
 
-    # Save everything needed for inference
     os.makedirs(MODEL_DIR, exist_ok=True)
     payload = {
         "model_name": best["name"],
@@ -257,7 +213,6 @@ def train_all_models(force: bool = False):
 
 
 def get_training_results() -> dict:
-    """Return the cached training metrics for the admin panel."""
     global _training_results
     if not _training_results and BEST_MODEL_PATH.exists():
         try:
